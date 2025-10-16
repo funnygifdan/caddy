@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Buddy Power Station</title>
+<style>
+/* ===== ROOT ===== */
+:root{
+ --bg:#000000;
+ --fg:#e6ffe6;
+ --green:#00ff00;
+ --accent:#00ffc8;
+ --muted:#0a0a0a;
+ --card:#0f0f10;
+ --ring:#00ff00;
+ --warn:#ff5a5a;
+ --shadow:0 0 24px rgba(0,255,120,.25), inset 0 0 14px rgba(0,255,120,.15);
+ --ms:260ms;
+ --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:radial-gradient(1200px 600px at 50% -200px,#021b10 0%,#000 55%);}
+body{color:var(--fg);font-family:var(--font);touch-action:none}
+
+/* ===== LAYOUT ===== */
+#app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:10px}
+.header{display:flex;align-items:center;gap:10px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(180deg,#041b0f,#010502);border:1px solid #033; padding:8px 12px;border-radius:10px;box-shadow:var(--shadow)}
+.badge .dot{width:10px;height:10px;border-radius:99px;background:var(--green);box-shadow:0 0 16px var(--green)}
+.header h1{margin:0;font-size:16px;letter-spacing:.6px;color:#cfffdf}
+.header small{opacity:.8}
+
+/* ===== CANVAS WRAP ===== */
+.stage{position:relative;border:1px solid #053; border-radius:12px; overflow:hidden;background:
+ radial-gradient(800px 500px at 50% -200px,#062013 0%,#010503 50%,#000 100%);
+box-shadow:0 0 0 1px rgba(0,255,120,.06), 0 0 60px rgba(0,255,120,.08) inset;}
+canvas{width:100%;height:100%;display:block}
+
+/* ===== HUD ===== */
+.hud{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:10px;flex-wrap:wrap;pointer-events:none}
+.card{pointer-events:auto;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid #073; padding:10px 12px;border-radius:12px;box-shadow:var(--shadow)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{cursor:pointer;user-select:none;border:1px solid #093;background:#04180e;border-radius:10px;padding:9px 12px;color:#cfffdf;transition:transform var(--ms), box-shadow var(--ms), background var(--ms)}
+.btn:active{transform:scale(.98)}
+.btn.on{box-shadow:0 0 16px rgba(0,255,120,.35) inset, 0 0 20px rgba(0,255,120,.25); background:#012812}
+.icon{font-weight:700}
+
+/* ===== RECHARGE BAR ===== */
+.meter{display:flex;align-items:center;gap:10px;min-width:240px}
+.meter b{font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.bar{position:relative;flex:1;height:12px;background:#061; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 8px rgba(0,0,0,.6)}
+.fill{position:absolute;inset:0 100% 0 0;background:linear-gradient(90deg,#00ff8a,#00ffc8);box-shadow:0 0 22px rgba(0,255,170,.5)}
+.sheen{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);mix-blend-mode:screen}
+
+/* ===== FOOTER ===== */
+.footer{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.footer .row{align-items:center}
+.kicker{opacity:.8;font-size:12px}
+
+/* ===== MINI HINT ===== */
+.hint{position:absolute;top:12px;left:12px;padding:6px 10px;background:#04180e;border:1px solid #083;border-radius:999px;font-size:12px;opacity:.9}
+
+/* ===== TOGGLE LIGHT ===== */
+body.day{background:radial-gradient(1200px 700px at 50% -250px,#0e2a1e 0%,#07140f 50%,#000 100%)}
+body.day .stage{background:radial-gradient(900px 500px at 50% -220px,#0b2b1d 0%,#04130c 50%,#000 100%)}
+</style>
+</head>
+<body>
+<div id="app">
+ <!-- ===== HEADER ===== -->
+ <div class="header">
+   <div class="badge"><span class="dot"></span><span>Buddy Power Station</span></div>
+   <h1>• Neon Recharge Lab</h1>
+   <small>tap / drag to spawn Zzz • toggle Buddy Mode for paw prints</small>
+ </div>
+
+ <!-- ===== STAGE ===== -->
+ <div class="stage" id="stage">
+   <canvas id="c"></canvas>
+   <div class="hint">Tip: long-press to burst ✨</div>
+   <div class="hud">
+     <div class="card meter">
+       <b id="pct">0%</b>
+       <div class="bar">
+         <div class="fill" id="fill"></div>
+         <div class="sheen"></div>
+       </div>
+     </div>
+     <div class="card row">
+       <button class="btn" id="buddy"><span class="icon">🐾</span> Buddy Mode</button>
+       <button class="btn" id="night"><span class="icon">🌙</span> Night</button>
+       <button class="btn" id="clear"><span class="icon">🧹</span> Clear</button>
+       <button class="btn" id="snap"><span class="icon">📸</span> Save Snapshot</button>
+     </div>
+     <div class="card" id="stats">Particles: <b id="pcount">0</b> • Steps: <b id="steps">0</b></div>
+   </div>
+ </div>
+
+ <!-- ===== FOOTER ===== -->
+ <div class="footer">
+   <div class="row">
+     <div class="badge"><span class="dot"></span><span>Charging…</span></div>
+     <div class="kicker">Buddy naps = genius dev time ⚡</div>
+   </div>
+   <div class="kicker">Made with ❤️ + 🍀 green vibes</div>
+ </div>
+</div>
+
+<script>
+/* ===== UTIL ===== */
+const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+const rand=(a,b)=>Math.random()*(b-a)+a;
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ===== CANVAS SETUP ===== */
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d',{alpha:true});
+const stage=document.getElementById('stage');
+let DPR=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+function fit(){
+ const r=stage.getBoundingClientRect();
+ canvas.width=Math.floor(r.width*DPR);
+ canvas.height=Math.floor(r.height*DPR);
+}
+window.addEventListener('resize',fit,{passive:true});
+fit();
+
+/* ===== STATE ===== */
+let particles=[];
+let paws=[];
+let lastTouch=null;
+let steps=0;
+let buddyMode=false;
+let charge=0; // 0..100
+let burstHold=false;
+let pressedAt=0;
+
+/* ===== PARTICLE FACTORY ===== */
+function spawn(x,y,opts={}){
+ const n=opts.count||16;
+ for(let i=0;i<n;i++){
+  const a=rand(0,Math.PI*2);
+  const sp=opts.soft?rand(.2,1.2):rand(.6,2.2);
+  particles.push({
+   x,y,
+   vx:Math.cos(a)*sp,
+   vy:Math.sin(a)*sp - rand(.5,1.5),
+   life:rand(1.0,2.4),
+   age:0,
+   hue:rand(110,170), // neon greens/teals
+   size:rand(1.5,3.5),
+   zz: Math.random()<.5
+  });
+ }
+}
+
+function addPaw(x,y){
+ paws.push({x,y,age:0,life:3+rand(0,1)});
+ steps++;
+ document.getElementById('steps').textContent=steps.toLocaleString();
+}
+
+/* ===== INPUT ===== */
+const pointer = (e)=>{
+ const rect=canvas.getBoundingClientRect();
+ const px=('touches'in e? e.touches[0].clientX:e.clientX)-rect.left;
+ const py=('touches'in e? e.touches[0].clientY:e.clientY)-rect.top;
+ return {x:px*DPR,y:py*DPR};
+};
+
+stage.addEventListener('pointerdown',(e)=>{
+ e.preventDefault();
+ burstHold=true; pressedAt=performance.now();
+ const p=pointer(e);
+ if(buddyMode){ addPaw(p.x,p.y); spawn(p.x,p.y,{count:10,soft:true}); }
+ else{ spawn(p.x,p.y,{count:22}); }
+ lastTouch=p;
+},{passive:false});
+
+stage.addEventListener('pointermove',(e)=>{
+ if(!lastTouch) return;
+ const p=pointer(e);
+ const dx=p.x-lastTouch.x, dy=p.y-lastTouch.y;
+ const dist=Math.hypot(dx,dy);
+ const seg=buddyMode?18:10;
+ const stepsNeeded=Math.max(1,Math.floor(dist/seg));
+ for(let i=1;i<=stepsNeeded;i++){
+  const t=i/stepsNeeded;
+  const x=lerp(lastTouch.x,p.x,t), y=lerp(lastTouch.y,p.y,t);
+  if(buddyMode){ if(i%2===0) addPaw(x,y); spawn(x,y,{count:6,soft:true}); }
+  else spawn(x,y,{count:8});
+ }
+ lastTouch=p;
+},{passive:true});
+
+const end=()=>{
+ burstHold=false; lastTouch=null;
+};
+stage.addEventListener('pointerup',end,{passive:true});
+stage.addEventListener('pointercancel',end,{passive:true});
+stage.addEventListener('pointerleave',end,{passive:true});
+
+/* ===== BUTTONS ===== */
+const buddyBtn=document.getElementById('buddy');
+const nightBtn=document.getElementById('night');
+const clearBtn=document.getElementById('clear');
+const snapBtn=document.getElementById('snap');
+buddyBtn.onclick=()=>{buddyMode=!buddyMode; buddyBtn.classList.toggle('on',buddyMode);};
+nightBtn.onclick=()=>{
+ const on=!document.body.classList.contains('day');
+ document.body.classList.toggle('day');
+ nightBtn.innerHTML= on?'<span class="icon">🌞</span> Day':'<span class="icon">🌙</span> Night';
+ nightBtn.classList.toggle('on',!on);
+};
+clearBtn.onclick=()=>{
+ particles.length=0; paws.length=0; steps=0;
+ document.getElementById('steps').textContent='0';
+};
+snapBtn.onclick=()=>{
+ const tmp=document.createElement('a');
+ tmp.download='buddy-power-station.png';
+ tmp.href=canvas.toDataURL('image/png');
+ tmp.click();
+};
+
+/* ===== RECHARGE METER ===== */
+const fill=document.getElementById('fill');
+const pct=document.getElementById('pct');
+function bumpCharge(dt){
+ // slow trickle + bonus if interacting
+ const target = burstHold ? Math.min(100, charge + 12*dt) : Math.min(100, charge + 2*dt);
+ charge = target;
+ const w = clamp(charge,0,100);
+ fill.style.right=(100-w)+'%';
+ pct.textContent=Math.round(w)+'%';
+}
+
+/* ===== RENDER ===== */
+function drawBackground(){
+ // subtle star flicker
+ const {width:w,height:h}=canvas;
+ ctx.clearRect(0,0,w,h);
+ ctx.save();
+ for(let i=0;i<70;i++){
+  const x=(i*97 % w), y=(i*57 % h);
+  const a=(Math.sin((i+tick*0.03))*0.5+0.5)*0.6+0.2;
+  ctx.globalAlpha=a*0.15;
+  ctx.fillStyle='#7affb1';
+  ctx.fillRect(x,y,2,2);
+ }
+ ctx.restore();
+}
+
+function drawParticles(dt){
+ const {width:w,height:h}=canvas;
+ let alive=0;
+ for(let i=0;i<particles.length;i++){
+  const p=particles[i];
+  p.age+=dt;
+  if(p.age>=p.life) continue;
+  alive++;
+  // physics
+  p.vy+=0.2*dt; // gravity
+  p.x+=p.vx*12*dt;
+  p.y+=p.vy*12*dt;
+
+  const t=p.age/p.life;
+  const alpha=(1-t)*.9;
+  const glow=8*(1-t)+4;
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  ctx.shadowBlur=glow;
+  ctx.shadowColor=`hsla(${p.hue},100%,60%,${alpha})`;
+  ctx.fillStyle=`hsla(${p.hue},100%,70%,${alpha})`;
+
+  // draw Z or spark
+  if(p.zz){
+    ctx.translate(p.x,p.y);
+    ctx.rotate(.5*Math.sin(p.age*3));
+    ctx.font=`${Math.max(10,p.size*8)}px monospace`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('Z',0,0);
+  }else{
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+ }
+ // compact array occasionally
+ if(particles.length>1200){ particles=particles.filter(p=>p.age<p.life); }
+ document.getElementById('pcount').textContent=alive.toString();
+}
+
+function drawPaws(dt){
+ ctx.save();
+ paws = paws.filter(p=>{
+  p.age+=dt;
+  const t=p.age/p.life;
+  const a=1-Math.pow(t,1.6);
+  ctx.globalAlpha=a*.9;
+  ctx.shadowBlur=14*a;
+  ctx.shadowColor='rgba(0,255,120,.6)';
+  ctx.fillStyle='rgba(0,255,120,.9)';
+  // simple paw: big pad + 4 toes
+  const s=10;
+  ctx.beginPath(); ctx.arc(p.x,p.y,s*1.1,0,Math.PI*2); ctx.fill();
+  for(let i=0;i<4;i++){
+    const ang=-Math.PI/6 + i*(Math.PI/9);
+    ctx.beginPath();
+    ctx.arc(p.x+Math.cos(ang)*s*1.2, p.y-12+Math.sin(ang)*s*0.6, s*0.5, 0, Math.PI*2);
+    ctx.fill();
+  }
+  return t<1;
+ });
+ ctx.restore();
+}
+
+/* ===== MAIN LOOP ===== */
+let tick=0, last=performance.now();
+function loop(now){
+ const dt=Math.min(0.05,(now-last)/1000); last=now; tick++;
+ drawBackground();
+ drawPaws(dt);
+ drawParticles(dt);
+ bumpCharge(dt*18); // visual rate scaler
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ===== SAFETY: PREVENT SCROLL/ZOOM ===== */
+document.addEventListener('gesturestart', e=>e.preventDefault());
+document.addEventListener('dblclick', e=>e.preventDefault());
+</script>
+</body>
+</html>
