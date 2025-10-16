@@ -4,95 +4,55 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <meta name="format-detection" content="telephone=no"/>
-<title>Buddy Power Station</title>
+<title>Buddy Power Station — Neon Draw</title>
 <style>
 /* ===== ROOT ===== */
 :root{
- --bg:#000000;
  --fg:#e6ffe6;
  --green:#00ff00;
  --accent:#00ffc8;
  --card:#0f0f10;
  --ms:260ms;
- --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+ --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
-*{
- box-sizing:border-box;
- -webkit-tap-highlight-color:transparent;
-}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-drag:none}
 html,body{
- height:100%;
- margin:0;
- background:radial-gradient(1200px 600px at 50% -200px,#021b10 0%,#000 55%);
- color:var(--fg);
- font-family:var(--font);
- /* kill scrolling/zoom gestures on touch devices */
- touch-action:none;
- -ms-touch-action:none;
+height:100%;margin:0;
+background:radial-gradient(1200px 600px at 50% -200px,#021b10 0%,#000 55%);
+color:var(--fg);font-family:var(--font);
+touch-action:none;-ms-touch-action:none;
 }
+/* kill selection globally (we re-enable manually if needed) */
+html,body,#app,.stage,.hud,.header,.footer,.card,.btn,.hint{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+body.drawing,*:where(body.drawing *){user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important}
 
-/* === selection off by default (we re-enable where needed) === */
-html,body,#app,.stage,.header,.footer,.hud,.card,.badge,.hint{
- -webkit-user-select:none;
- user-select:none;
- -webkit-touch-callout:none;
-}
-
-/* allow selection inside explicitly marked elements if we ever need it */
-.selectable{
- -webkit-user-select:text !important;
- user-select:text !important;
-}
-
-/* while drawing, *everything* is locked */
-body.drawing, body.drawing *{
- -webkit-user-select:none !important;
- user-select:none !important;
- -webkit-touch-callout:none !important;
-}
-
-/* ===== LAYOUT ===== */
 #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:10px}
 .header{display:flex;align-items:center;gap:10px}
-.badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(180deg,#041b0f,#010502);border:1px solid #033; padding:8px 12px;border-radius:10px;box-shadow:0 0 24px rgba(0,255,120,.25), inset 0 0 14px rgba(0,255,120,.15)}
+.badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(180deg,#041b0f,#010502);border:1px solid #033;padding:8px 12px;border-radius:10px;box-shadow:0 0 24px rgba(0,255,120,.25), inset 0 0 14px rgba(0,255,120,.15)}
 .badge .dot{width:10px;height:10px;border-radius:99px;background:var(--green);box-shadow:0 0 16px var(--green)}
 .header h1{margin:0;font-size:16px;letter-spacing:.6px;color:#cfffdf}
 .header small{opacity:.8}
 
-/* ===== STAGE ===== */
-.stage{
- position:relative;
- border:1px solid #053;
- border-radius:12px;
- overflow:hidden;
- background:radial-gradient(800px 500px at 50% -200px,#062013 0%,#010503 50%,#000 100%);
- box-shadow:0 0 0 1px rgba(0,255,120,.06), 0 0 60px rgba(0,255,120,.08) inset;
-}
+.stage{position:relative;border:1px solid #053;border-radius:12px;overflow:hidden;background:radial-gradient(800px 500px at 50% -200px,#062013 0%,#010503 50%,#000 100%);box-shadow:0 0 0 1px rgba(0,255,120,.06),0 0 60px rgba(0,255,120,.08) inset}
 canvas{position:relative;z-index:2;width:100%;height:100%;display:block}
 .hud{position:absolute;z-index:3;left:10px;right:10px;bottom:10px;display:flex;gap:10px;flex-wrap:wrap;pointer-events:none}
-.card{pointer-events:auto;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid #073; padding:10px 12px;border-radius:12px;box-shadow:0 0 24px rgba(0,255,120,.25), inset 0 0 14px rgba(0,255,120,.15)}
+.card{pointer-events:auto;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid #073;padding:10px 12px;border-radius:12px;box-shadow:0 0 24px rgba(0,255,120,.25), inset 0 0 14px rgba(0,255,120,.15)}
 .row{display:flex;gap:10px;flex-wrap:wrap}
-.btn{cursor:pointer;border:1px solid #093;background:#04180e;border-radius:10px;padding:9px 12px;color:#cfffdf;transition:transform var(--ms), box-shadow var(--ms), background var(--ms); user-select:none}
+.btn{cursor:pointer;border:1px solid #093;background:#04180e;border-radius:10px;padding:9px 12px;color:#cfffdf;transition:transform var(--ms),box-shadow var(--ms),background var(--ms)}
 .btn:active{transform:scale(.98)}
-.btn.on{box-shadow:0 0 16px rgba(0,255,120,.35) inset, 0 0 20px rgba(0,255,120,.25); background:#012812}
+.btn.on{box-shadow:0 0 16px rgba(0,255,120,.35) inset, 0 0 20px rgba(0,255,120,.25);background:#012812}
 .icon{font-weight:700}
 
-/* ===== RECHARGE BAR ===== */
 .meter{display:flex;align-items:center;gap:10px;min-width:240px}
 .meter b{font-variant-numeric:tabular-nums;letter-spacing:.5px}
-.bar{position:relative;flex:1;height:12px;background:#061; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 8px rgba(0,0,0,.6)}
+.bar{position:relative;flex:1;height:12px;background:#061;border-radius:999px;overflow:hidden;box-shadow:inset 0 0 8px rgba(0,0,0,.6)}
 .fill{position:absolute;inset:0 100% 0 0;background:linear-gradient(90deg,#00ff8a,#00ffc8);box-shadow:0 0 22px rgba(0,255,170,.5)}
 .sheen{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);mix-blend-mode:screen}
 
-/* ===== FOOTER ===== */
 .footer{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.footer .row{align-items:center}
 .kicker{opacity:.8;font-size:12px}
-
-/* ===== HINT ===== */
 .hint{position:absolute;top:12px;left:12px;padding:6px 10px;background:#04180e;border:1px solid #083;border-radius:999px;font-size:12px;opacity:.9}
 
-/* ===== DAY MODE ===== */
 body.day{background:radial-gradient(1200px 700px at 50% -250px,#0e2a1e 0%,#07140f 50%,#000 100%)}
 body.day .stage{background:radial-gradient(900px 500px at 50% -220px,#0b2b1d 0%,#04130c 50%,#000 100%)}
 </style>
@@ -102,7 +62,7 @@ body.day .stage{background:radial-gradient(900px 500px at 50% -220px,#0b2b1d 0%,
  <div class="header">
    <div class="badge"><span class="dot"></span><span>Power Station</span></div>
    <h1>Recharge Lab</h1>
-   <small>Tip: toggle Buddy Mode for paw prints</small>
+   <small>Buddy Mode = paw prints • Draw Mode = smooth neon stroke</small>
  </div>
 
  <div class="stage" id="stage">
@@ -114,6 +74,7 @@ body.day .stage{background:radial-gradient(900px 500px at 50% -220px,#0b2b1d 0%,
        <div class="bar"><div class="fill" id="fill"></div><div class="sheen"></div></div>
      </div>
      <div class="card row">
+       <button class="btn" id="draw"><span class="icon">✏️</span> Draw Mode</button>
        <button class="btn" id="buddy"><span class="icon">🐾</span> Buddy Mode</button>
        <button class="btn" id="night"><span class="icon">🌙</span> Night</button>
        <button class="btn" id="clear"><span class="icon">🧹</span> Clear</button>
@@ -124,10 +85,7 @@ body.day .stage{background:radial-gradient(900px 500px at 50% -220px,#0b2b1d 0%,
  </div>
 
  <div class="footer">
-   <div class="row">
-     <div class="badge"><span class="dot"></span><span>Charging…</span></div>
-     <div class="kicker">Buddy naps = genius dev time ⚡</div>
-   </div>
+   <div class="kicker">Buddy naps = genius dev time ⚡</div>
    <div class="kicker">Made with ❤️ + 🍀 green vibes</div>
  </div>
 </div>
@@ -138,27 +96,18 @@ const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
 const rand=(a,b)=>Math.random()*(b-a)+a;
 const lerp=(a,b,t)=>a+(b-a)*t;
 
-/* ===== CANVAS SETUP ===== */
+/* ===== CANVAS ===== */
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d',{alpha:true});
 const stage=document.getElementById('stage');
 let DPR=Math.max(1,Math.min(2,window.devicePixelRatio||1));
-function fit(){
- const r=stage.getBoundingClientRect();
- canvas.width=Math.floor(r.width*DPR);
- canvas.height=Math.floor(r.height*DPR);
-}
-addEventListener('resize',fit,{passive:true});
-fit();
+function fit(){const r=stage.getBoundingClientRect();canvas.width=Math.floor(r.width*DPR);canvas.height=Math.floor(r.height*DPR);}
+addEventListener('resize',fit,{passive:true});fit();
 
 /* ===== STATE ===== */
-let particles=[];
-let paws=[];
-let lastTouch=null;
-let steps=0;
-let buddyMode=false;
-let charge=0;
-let burstHold=false;
+let particles=[], paws=[], strokes=[];
+let lastTouch=null, steps=0, charge=0;
+let burstHold=false, buddyMode=false, drawMode=false;
 
 /* ===== PARTICLES ===== */
 function spawn(x,y,opts={}){
@@ -166,60 +115,86 @@ function spawn(x,y,opts={}){
  for(let i=0;i<n;i++){
   const a=rand(0,Math.PI*2);
   const sp=opts.soft?rand(.2,1.2):rand(.6,2.2);
-  particles.push({
-   x,y,
-   vx:Math.cos(a)*sp,
-   vy:Math.sin(a)*sp - rand(.5,1.5),
-   life:rand(1.0,2.4),
-   age:0,
-   hue:rand(110,170),
-   size:rand(1.5,3.5),
-   zz: Math.random()<.5
-  });
+  particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-rand(.5,1.5),life:rand(1.0,2.4),age:0,hue:rand(110,170),size:rand(1.5,3.5),zz:Math.random()<.5});
  }
 }
-function addPaw(x,y){
- paws.push({x,y,age:0,life:3+rand(0,1)});
- steps++;
- document.getElementById('steps').textContent=steps.toLocaleString();
+function addPaw(x,y){paws.push({x,y,age:0,life:3+rand(0,1)});steps++;document.getElementById('steps').textContent=steps.toLocaleString();}
+
+/* ===== DRAW MODE STROKES ===== */
+function addPointToStroke(p){
+ const s=strokes[strokes.length-1];
+ s.pts.push(p);
+ if(s.pts.length>1){
+   const a=s.pts[s.pts.length-2], b=p;
+   s.len+=Math.hypot(b.x-a.x,b.y-a.y);
+ }
+}
+function paintStrokes(dt){
+ ctx.save();
+ ctx.globalCompositeOperation='lighter';
+ strokes = strokes.filter(s=>{
+  s.age+=dt;
+  const fade = Math.max(0,1 - s.age/s.life);
+  const base = 2 + Math.min(10, s.len/200); // thickness by length/speed
+  ctx.lineWidth = base*DPR;
+  ctx.shadowBlur = 18*fade;
+  ctx.shadowColor = `rgba(0,255,170,${.6*fade})`;
+  ctx.strokeStyle = `rgba(0,255,200,${.9*fade})`;
+  ctx.beginPath();
+  for(let i=0;i<s.pts.length;i++){
+    const k = i===0 ? s.pts[0] : s.pts[i-1];
+    const p = s.pts[i];
+    const midx = (k.x+p.x)/2, midy=(k.y+p.y)/2;
+    if(i===0) ctx.moveTo(p.x,p.y);
+    else ctx.quadraticCurveTo(k.x,k.y,midx,midy);
+  }
+  ctx.stroke();
+  return fade>0.02;
+ });
+ ctx.restore();
 }
 
-/* ===== INPUT (lock selection while drawing) ===== */
+/* ===== INPUT ===== */
 const pointer = (e)=>{
- const rect=canvas.getBoundingClientRect();
+ const r=canvas.getBoundingClientRect();
  const t=('touches'in e? e.touches[0]:e);
- return {x:(t.clientX-rect.left)*DPR,y:(t.clientY-rect.top)*DPR};
+ return {x:(t.clientX-r.left)*DPR,y:(t.clientY-r.top)*DPR};
 };
 
-const start=(e)=>{
+function start(e){
  e.preventDefault();
- document.body.classList.add('drawing');          // hard lock
+ document.body.classList.add('drawing'); // hard lock selection
  burstHold=true;
  const p=pointer(e);
- if(buddyMode){ addPaw(p.x,p.y); spawn(p.x,p.y,{count:10,soft:true}); }
- else{ spawn(p.x,p.y,{count:22}); }
- lastTouch=p;
-};
-const move=(e)=>{
- if(!lastTouch) return;
- const p=pointer(e);
- const dx=p.x-lastTouch.x, dy=p.y-lastTouch.y;
- const dist=Math.hypot(dx,dy);
- const seg=buddyMode?18:10;
- const stepsNeeded=Math.max(1,Math.floor(dist/seg));
- for(let i=1;i<=stepsNeeded;i++){
-  const t=i/stepsNeeded;
-  const x=lerp(lastTouch.x,p.x,t), y=lerp(lastTouch.y,p.y,t);
-  if(buddyMode){ if(i%2===0) addPaw(x,y); spawn(x,y,{count:6,soft:true}); }
-  else spawn(x,y,{count:8});
+ if(drawMode){
+   strokes.push({pts:[p],age:0,life:5,len:0});
+ }else{
+   if(buddyMode){addPaw(p.x,p.y);spawn(p.x,p.y,{count:10,soft:true});}
+   else{spawn(p.x,p.y,{count:22});}
  }
  lastTouch=p;
-};
-const end=()=>{
- burstHold=false;
- lastTouch=null;
- document.body.classList.remove('drawing');       // release lock
-};
+}
+function move(e){
+ if(!lastTouch) return;
+ const p=pointer(e);
+ if(drawMode){
+   // smoothed points
+   const last=strokes[strokes.length-1];
+   if(last) addPointToStroke(p);
+ }else{
+   const dx=p.x-lastTouch.x, dy=p.y-lastTouch.y;
+   const dist=Math.hypot(dx,dy), seg=buddyMode?18:10;
+   const stepsNeeded=Math.max(1,Math.floor(dist/seg));
+   for(let i=1;i<=stepsNeeded;i++){
+     const t=i/stepsNeeded;
+     const x=lerp(lastTouch.x,p.x,t), y=lerp(lastTouch.y,p.y,t);
+     if(buddyMode){ if(i%2===0) addPaw(x,y); spawn(x,y,{count:6,soft:true}); }
+     else spawn(x,y,{count:8});
+   }
+ }
+ lastTouch=p;
+}
+function end(){burstHold=false;lastTouch=null;document.body.classList.remove('drawing');}
 
 stage.addEventListener('pointerdown',start,{passive:false});
 stage.addEventListener('pointermove',move,{passive:true});
@@ -227,112 +202,81 @@ stage.addEventListener('pointerup',end,{passive:true});
 stage.addEventListener('pointercancel',end,{passive:true});
 stage.addEventListener('pointerleave',end,{passive:true});
 
-/* Extra guards for stubborn in-app browsers */
-document.addEventListener('selectstart', e=>{ if(document.body.classList.contains('drawing')) e.preventDefault(); }, {passive:false});
-document.addEventListener('contextmenu', e=>{ if(document.body.classList.contains('drawing')) e.preventDefault(); }, {passive:false});
-document.addEventListener('gesturestart', e=>e.preventDefault(), {passive:false});
-document.addEventListener('dblclick', e=>e.preventDefault(), {passive:false});
+/* global guards */
+document.addEventListener('selectstart',e=>{if(document.body.classList.contains('drawing')) e.preventDefault()},{passive:false});
+document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('drawing')) e.preventDefault()},{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 
-/* ===== BUTTONS ===== */
-buddyBtn.onclick=()=>{buddyMode=!buddyMode; buddyBtn.classList.toggle('on',buddyMode);};
-nightBtn.onclick=()=>{
+/* ===== UI ===== */
+const fill=document.getElementById('fill'), pct=document.getElementById('pct');
+const pcountEl=document.getElementById('pcount'), stepsEl=document.getElementById('steps');
+const buddyBtn=document.getElementById('buddy'), nightBtn=document.getElementById('night');
+const clearBtn=document.getElementById('clear'), snapBtn=document.getElementById('snap');
+const drawBtn=document.getElementById('draw');
+
+buddyBtn.onclick=()=>{buddyMode=!buddyMode; buddyBtn.classList.toggle('on',buddyMode); if(buddyMode&&drawMode){drawMode=false;drawBtn.classList.remove('on');}};
+drawBtn.onclick =()=>{drawMode=!drawMode; drawBtn.classList.toggle('on',drawMode); if(drawMode&&buddyMode){buddyMode=false;buddyBtn.classList.remove('on');}};
+nightBtn.onclick =()=>{
  const on=!document.body.classList.contains('day');
  document.body.classList.toggle('day');
  nightBtn.innerHTML= on?'<span class="icon">🌞</span> Day':'<span class="icon">🌙</span> Night';
  nightBtn.classList.toggle('on',!on);
 };
-clearBtn.onclick=()=>{particles.length=0; paws.length=0; steps=0; stepsEl.textContent='0';};
-snapBtn.onclick=()=>{const a=document.createElement('a'); a.download='buddy-power-station.png'; a.href=canvas.toDataURL('image/png'); a.click();};
-
-const buddyBtn=document.getElementById('buddy');
-const nightBtn=document.getElementById('night');
-const clearBtn=document.getElementById('clear');
-const snapBtn=document.getElementById('snap');
-const stepsEl=document.getElementById('steps');
+clearBtn.onclick =()=>{particles.length=0;paws.length=0;strokes.length=0;steps=0;stepsEl.textContent='0';};
+snapBtn.onclick  =()=>{const a=document.createElement('a');a.download='buddy-neon.png';a.href=canvas.toDataURL('image/png');a.click();};
 
 /* ===== RECHARGE ===== */
-const fill=document.getElementById('fill');
-const pct=document.getElementById('pct');
 function bumpCharge(dt){
  const target = burstHold ? Math.min(100, charge + 12*dt) : Math.min(100, charge + 2*dt);
- charge = target;
- const w = clamp(charge,0,100);
- fill.style.right=(100-w)+'%';
- pct.textContent=Math.round(w)+'%';
+ charge = target; const w = clamp(charge,0,100);
+ fill.style.right=(100-w)+'%'; pct.textContent=Math.round(w)+'%';
 }
 
 /* ===== RENDER ===== */
 function drawBackground(){
- const {width:w,height:h}=canvas;
- ctx.clearRect(0,0,w,h);
+ const {width:w,height:h}=canvas; ctx.clearRect(0,0,w,h);
  ctx.save();
  for(let i=0;i<70;i++){
   const x=(i*97 % w), y=(i*57 % h);
   const a=(Math.sin((i+tick*0.03))*0.5+0.5)*0.6+0.2;
-  ctx.globalAlpha=a*0.15;
-  ctx.fillStyle='#7affb1';
-  ctx.fillRect(x,y,2,2);
+  ctx.globalAlpha=a*0.15; ctx.fillStyle='#7affb1'; ctx.fillRect(x,y,2,2);
  }
  ctx.restore();
 }
 function drawParticles(dt){
- const {width:w,height:h}=canvas;
  let alive=0;
  for(let i=0;i<particles.length;i++){
-  const p=particles[i];
-  p.age+=dt;
-  if(p.age>=p.life) continue;
-  alive++;
-  p.vy+=0.2*dt;
-  p.x+=p.vx*12*dt;
-  p.y+=p.vy*12*dt;
+  const p=particles[i]; p.age+=dt; if(p.age>=p.life) continue; alive++;
+  p.vy+=0.2*dt; p.x+=p.vx*12*dt; p.y+=p.vy*12*dt;
   const t=p.age/p.life, alpha=(1-t)*.9, glow=8*(1-t)+4;
-  ctx.save();
-  ctx.globalCompositeOperation='lighter';
-  ctx.shadowBlur=glow;
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowBlur=glow;
   ctx.shadowColor=`hsla(${p.hue},100%,60%,${alpha})`;
   ctx.fillStyle=`hsla(${p.hue},100%,70%,${alpha})`;
-  if(p.zz){
-    ctx.translate(p.x,p.y);
-    ctx.rotate(.5*Math.sin(p.age*3));
-    ctx.font=`${Math.max(10,p.size*8)}px monospace`;
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.fillText('Z',0,0);
-  }else{
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-  }
+  if(p.zz){ctx.translate(p.x,p.y);ctx.rotate(.5*Math.sin(p.age*3));ctx.font=`${Math.max(10,p.size*8)}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Z',0,0);}
+  else{ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();}
   ctx.restore();
  }
- if(particles.length>1200){ particles=particles.filter(p=>p.age<p.life); }
- document.getElementById('pcount').textContent=alive.toString();
+ if(particles.length>1200) particles=particles.filter(p=>p.age<p.life);
+ pcountEl.textContent=alive.toString();
 }
 function drawPaws(dt){
  ctx.save();
  paws = paws.filter(p=>{
-  p.age+=dt;
-  const t=p.age/p.life, a=1-Math.pow(t,1.6), s=10;
-  ctx.globalAlpha=a*.9;
-  ctx.shadowBlur=14*a;
-  ctx.shadowColor='rgba(0,255,120,.6)';
-  ctx.fillStyle='rgba(0,255,120,.9)';
+  p.age+=dt; const t=p.age/p.life, a=1-Math.pow(t,1.6), s=10;
+  ctx.globalAlpha=a*.9; ctx.shadowBlur=14*a; ctx.shadowColor='rgba(0,255,120,.6)'; ctx.fillStyle='rgba(0,255,120,.9)';
   ctx.beginPath(); ctx.arc(p.x,p.y,s*1.1,0,Math.PI*2); ctx.fill();
-  for(let i=0;i<4;i++){
-    const ang=-Math.PI/6 + i*(Math.PI/9);
-    ctx.beginPath();
-    ctx.arc(p.x+Math.cos(ang)*s*1.2, p.y-12+Math.sin(ang)*s*0.6, s*0.5, 0, Math.PI*2);
-    ctx.fill();
-  }
+  for(let i=0;i<4;i++){const ang=-Math.PI/6+i*(Math.PI/9);ctx.beginPath();ctx.arc(p.x+Math.cos(ang)*s*1.2,p.y-12+Math.sin(ang)*s*0.6,s*0.5,0,Math.PI*2);ctx.fill();}
   return t<1;
  });
  ctx.restore();
 }
 
 /* ===== LOOP ===== */
-let tick=0, last=performance.now();
+let tick=0,last=performance.now();
 function loop(now){
  const dt=Math.min(0.05,(now-last)/1000); last=now; tick++;
- drawBackground(); drawPaws(dt); drawParticles(dt); bumpCharge(dt*18);
+ drawBackground(); paintStrokes(dt); drawPaws(dt); drawParticles(dt); bumpCharge(dt*18);
  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
